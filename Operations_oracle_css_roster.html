@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--color-background-tertiary, #f0f2f5); padding: 16px; color: var(--color-text-primary, #1a1a1b); font-size: 13px; }
+.container { max-width: 1600px; margin: 0 auto; background: var(--color-background-primary, white); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 20px; }
+header { text-align: center; margin-bottom: 20px; }
+header h1 { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+header p { font-size: 12px; color: var(--color-text-secondary); margin-top: 4px; }
+.controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.panel { background: var(--color-background-secondary, #f8f9fa); padding: 14px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary); }
+.panel h3 { font-size: 13px; font-weight: 500; margin-bottom: 10px; color: var(--color-text-primary); }
+.panel-full { background: var(--color-background-secondary, #f8f9fa); padding: 14px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary); margin-bottom: 16px; }
+.panel-full h3 { font-size: 13px; font-weight: 500; margin-bottom: 8px; color: var(--color-text-primary); }
+
+/* Public Holiday Panel */
+.panel-holiday { background: #fff8e1; padding: 14px; border-radius: 8px; border: 0.5px solid #ffe082; margin-bottom: 16px; }
+.panel-holiday h3 { font-size: 13px; font-weight: 500; margin-bottom: 8px; color: #5d4037; }
+.holiday-list { font-size: 11px; margin-top: 8px; max-height: 110px; overflow-y: auto; }
+.holiday-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: white; margin-bottom: 3px; border-radius: 5px; border: 1px solid #ffe082; }
+.holiday-item-left { display: flex; flex-direction: column; gap: 1px; }
+.holiday-item-left strong { font-size: 11px; color: #4a148c; }
+.holiday-item-left span { font-size: 10px; color: #795548; }
+.holiday-scope-badge { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 8px; margin-left: 6px; }
+.scope-all { background: #ede7f6; color: #4a148c; }
+.scope-select { background: #e8f5e9; color: #1b5e20; }
+.ph-tag { background: #ede7f6; color: #4a148c; font-size: 9px; font-weight: 600; padding: 2px 4px; border-radius: 3px; display: block; border: 1px dashed #7b1fa2; margin-top: 2px; }
+.ph-cell { background: #f3e5f5 !important; }
+
+input[type=date], select { padding: 6px 8px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; font-size: 12px; background: var(--color-background-primary); color: var(--color-text-primary); }
+input[type=text] { padding: 6px 8px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; font-size: 12px; background: var(--color-background-primary); color: var(--color-text-primary); }
+button { padding: 7px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); }
+button:hover { background: var(--color-background-secondary); }
+.btn-gen { background: #1a73e8; color: white; border-color: #1a73e8; }
+.btn-gen:hover { background: #1558b0; }
+.btn-add { background: #34a853; color: white; border-color: #34a853; }
+.btn-add:hover { background: #267a3d; }
+.btn-ph { background: #7b1fa2; color: white; border-color: #7b1fa2; }
+.btn-ph:hover { background: #4a148c; }
+.btn-row { display: flex; gap: 8px; margin-top: 8px; }
+.input-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.leave-list { font-size: 11px; margin-top: 8px; max-height: 80px; overflow-y: auto; }
+.leave-item { display: flex; justify-content: space-between; padding: 3px 6px; background: var(--color-background-primary); margin-bottom: 2px; border-radius: 4px; border: 0.5px solid var(--color-border-tertiary); }
+
+/* Holiday scope multiselect */
+.scope-select-wrap { position: relative; }
+.scope-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 240px; background: white; border: 1px solid #ffe082; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 100; padding: 6px; max-height: 200px; overflow-y: auto; }
+.scope-dropdown.open { display: block; }
+.scope-dropdown label { display: flex; align-items: center; gap: 6px; padding: 3px 6px; font-size: 11px; cursor: pointer; border-radius: 4px; }
+.scope-dropdown label:hover { background: #f3e5f5; }
+.scope-dropdown .scope-sep { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #9e9e9e; padding: 4px 6px 2px; }
+.scope-trigger { min-width: 130px; text-align: left; background: white; border-color: #ffe082; font-size: 11px; padding: 5px 8px; }
+.scope-trigger:hover { background: #fff8e1; }
+
+/* Export bar */
+.export-bar { display: none; margin-bottom: 16px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 8px; padding: 12px 16px; align-items: center; gap: 12px; flex-wrap: wrap; }
+.export-bar.visible { display: flex; }
+.export-bar span { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); flex-shrink: 0; }
+.export-btn { display: flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 0.5px solid; transition: opacity 0.15s; }
+.export-btn:hover { opacity: 0.85; }
+.export-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.btn-csv  { background: #188038; color: white; border-color: #188038; }
+.btn-excel { background: #217346; color: white; border-color: #217346; }
+.btn-pdf  { background: #d93025; color: white; border-color: #d93025; }
+.btn-html { background: #1a73e8; color: white; border-color: #1a73e8; }
+.btn-print { background: #5f6368; color: white; border-color: #5f6368; }
+.export-divider { width: 1px; height: 28px; background: var(--color-border-tertiary); }
+
+table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
+th { background: #202124; color: white; padding: 8px 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+td { border: 0.5px solid #dfe1e5; padding: 6px; text-align: center; font-size: 10px; vertical-align: top; }
+.shift-m { background: #e8f0fe; } .shift-a { background: #fef7e0; } .shift-n { background: #fce8f3; }
+.weekend td:first-child { border-left: 3px solid #1a73e8; }
+.public-holiday-row td:first-child { border-left: 3px solid #7b1fa2 !important; }
+.leave-tag { background: #fbe9e7; color: #d93025; font-size: 9px; font-weight: 600; padding: 2px 3px; border-radius: 3px; display: block; border: 1px dashed #d93025; margin-top: 2px; }
+.off-tag { background: #fff3e0; color: #e65100; font-size: 9px; font-weight: 600; padding: 2px 3px; border-radius: 3px; display: block; border: 1px dashed #e65100; margin-top: 2px; }
+.badge { display: block; margin: 2px auto; padding: 2px 4px; border-radius: 4px; font-weight: 600; color: white; font-size: 9px; width: 94%; }
+.bg-tl { background: #d93025; } .bg-l3 { background: #1a73e8; } .bg-l2 { background: #5f6368; } .bg-gen { background: #188038; }
+.dashboard { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-top: 24px; border-top: 1px solid var(--color-border-tertiary); padding-top: 20px; }
+.warn-cell { border: 1.5px solid #ffc107 !important; }
+.info-box { font-size: 12px; color: var(--color-text-secondary); line-height: 1.7; }
+
+.trailing-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.trailing-table thead th { background: #3c3c3c; color: white; padding: 5px 8px; text-align: left; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+.trailing-table tbody tr:nth-child(even) { background: var(--color-background-primary); }
+.trailing-table tbody tr:nth-child(odd) { background: var(--color-background-secondary); }
+.trailing-table td { padding: 4px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); vertical-align: middle; }
+.trailing-table td:first-child { font-weight: 500; font-size: 10px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.trailing-table input[type=number] { width: 44px; text-align: center; padding: 3px 4px; font-size: 11px; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; background: var(--color-background-primary); color: var(--color-text-primary); }
+.trailing-table select { padding: 3px 5px; font-size: 10px; min-width: 100px; }
+.shift-pill { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 9px; font-weight: 600; }
+.pill-m { background: #e8f0fe; color: #1a56c4; } .pill-a { background: #fef7e0; color: #8a6200; } .pill-n { background: #fce8f3; color: #9c2875; } .pill-none { background: #f1f3f4; color: #5f6368; }
+.trailing-scroll { max-height: 180px; overflow-y: auto; border-radius: 0 0 6px 6px; border: 0.5px solid var(--color-border-tertiary); }
+.streak-warn { background: #fff3e0; color: #e65100; display: inline-block; padding: 1px 5px; border-radius: 10px; font-size: 9px; font-weight: 600; }
+
+/* Legend */
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; font-size: 10px; align-items: center; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Oracle CSS Shift Management</h1>
+    <p>5:2 Cycle | Leave Management | Public Holidays | Consecutive-Day Limit | Multiple Export Formats</p>
+  </header>
+
+  <div class="controls-grid">
+    <div class="panel">
+      <h3>1. Roster Settings</h3>
+      <div class="input-row">
+        <input type="date" id="startDate">
+        <select id="duration">
+          <option value="28">28 Days</option>
+          <option value="29">29 Days</option>
+          <option value="30">30 Days</option>
+          <option value="31">31 Days</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn-gen" onclick="generateRoster()" style="flex:1">&#9654; Generate Roster</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>2. Register Leave / Vacation</h3>
+      <div class="input-row">
+        <select id="leaveName" style="flex:1.5"></select>
+        <input type="date" id="leaveStart">
+        <input type="date" id="leaveEnd">
+        <button class="btn-add" onclick="addLeave()">Add</button>
+      </div>
+      <div id="leaveRegistry" class="leave-list"></div>
+    </div>
+  </div>
+
+  <!-- Public Holiday Panel -->
+  <div class="panel-holiday">
+    <h3>&#127881; Public Holidays</h3>
+    <p style="font-size:11px;color:#795548;margin-bottom:10px;">
+      Add public holidays. Choose <strong>All Staff</strong> (no one is scheduled) or select specific individuals who observe the holiday.
+      Streak counters are <strong>not</strong> incremented on holidays — they are treated as neutral rest days, not forced-off days.
+    </p>
+    <div class="input-row" style="flex-wrap:wrap;">
+      <input type="text" id="holidayName" placeholder="Holiday name (e.g. Diwali)" style="flex:1.5;min-width:140px;">
+      <input type="date" id="holidayDate" style="flex:1;">
+
+      <!-- Scope picker -->
+      <div class="scope-select-wrap">
+        <button class="scope-trigger" onclick="toggleScopeDropdown(event)" id="scopeTriggerBtn">&#127775; All Staff</button>
+        <div class="scope-dropdown" id="scopeDropdown">
+          <div class="scope-sep">Quick Select</div>
+          <label><input type="checkbox" id="scopeAll" onchange="scopeAllToggle(this)" checked> All Staff</label>
+          <div class="scope-sep" style="margin-top:4px;">Individual</div>
+          <div id="scopeCheckboxes"></div>
+        </div>
+      </div>
+
+      <button class="btn-ph" onclick="addHoliday()">+ Add Holiday</button>
+    </div>
+    <div id="holidayRegistry" class="holiday-list"></div>
+  </div>
+
+  <div class="panel-full">
+    <h3>3. Trailing Workdays (End of Previous Month)</h3>
+    <p style="font-size:11px;color:var(--color-text-secondary);margin-bottom:10px;">
+      Enter each person's consecutive days worked and last shift at end of previous month. Prevents streaks exceeding 5 days across month boundaries.
+    </p>
+    <div class="trailing-scroll">
+      <table class="trailing-table">
+        <thead>
+          <tr>
+            <th style="width:160px">Name</th>
+            <th style="width:130px">Last Shift</th>
+            <th>Trailing Days (0–5)</th>
+            <th>Preview</th>
+          </tr>
+        </thead>
+        <tbody id="trailingBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Export bar — shown after generation -->
+  <div class="export-bar" id="exportBar">
+    <span>&#11123; Download as:</span>
+
+    <button class="export-btn btn-csv" onclick="exportCSV()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+      CSV
+    </button>
+
+    <button class="export-btn btn-excel" onclick="exportExcel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Excel (.xlsx)
+    </button>
+
+    <button class="export-btn btn-pdf" onclick="exportPDF()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-4m3 4v-2m3 2v-3"/></svg>
+      PDF
+    </button>
+
+    <button class="export-btn btn-html" onclick="exportHTML()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      HTML File
+    </button>
+
+    <div class="export-divider"></div>
+
+    <button class="export-btn btn-print" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print
+    </button>
+  </div>
+
+  <!-- Color legend -->
+  <div class="legend" id="rosterLegend" style="display:none">
+    <strong style="font-size:10px;color:#555">Legend:</strong>
+    <span class="legend-item"><span class="legend-dot" style="background:#e8f0fe;border:1px solid #b0c4f8"></span> Morning</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#fef7e0;border:1px solid #f5d97a"></span> Afternoon</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#fce8f3;border:1px solid #f0a8d8"></span> Night</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#f3e5f5;border:1px dashed #7b1fa2"></span> Public Holiday</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#fbe9e7;border:1px dashed #d93025"></span> Leave</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#fff3e0;border:1px dashed #e65100"></span> Forced Off</span>
+    <span class="legend-item" style="border-left:3px solid #7b1fa2;padding-left:4px;font-size:10px;">Holiday row</span>
+    <span class="legend-item" style="border-left:3px solid #1a73e8;padding-left:4px;font-size:10px;">Weekend row</span>
+  </div>
+
+  <div id="rosterOutput"></div>
+
+  <div class="dashboard">
+    <div class="panel">
+      <h3>Staff Fairness Matrix</h3>
+      <div id="fairnessOutput"></div>
+    </div>
+    <div class="panel">
+      <h3>Export Guide</h3>
+      <div class="info-box">
+        <strong>CSV</strong> — Universal. Opens in Excel, Google Sheets, Numbers.<br><br>
+        <strong>Excel (.xlsx)</strong> — Native Excel format with colour-coded shift cells and frozen header row.<br><br>
+        <strong>PDF</strong> — Print-ready A3 landscape document via browser PDF dialog.<br><br>
+        <strong>HTML File</strong> — Self-contained page you can share or open offline in any browser.<br><br>
+        <strong>Print</strong> — Direct browser print dialog. Choose destination printer or "Save as PDF".<br><br>
+        <strong>&#127881; Public Holidays</strong> — Shown in purple. Streak counters pause on holidays (not counted as work or forced-off). All-staff holidays suppress scheduling for everyone; selective holidays show only affected individuals as "PH" in the General column.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const team = {
+  tls: ["Atul Dhamal","Mahesh Arokia","Mehul Dholakiya","Paras Shah","Rajkumar Chitravelu","Vigneshwaran Prakash"],
+  l3s: ["Arjun Ghadi","Ashish Chaturvedi","Sanjiv Sudhakar","Varad C N"],
+  l2s: ["Abhijeet Gorivale","Akash Sahu","Arsalan Shaikh","Fernando Gerard","Gandharv Adhikari","Mahadev Bhusnar","Mahesh Pawar","Manoj Khatri","Mehmood Nachan","Nitin Gadekar","Pranav Markande"],
+  fixed: ["Athira Pillai","Sarika Gadekar","Ranjit Kumar S P"]
+};
+
+const allNames = [...team.tls,...team.l3s,...team.l2s,...team.fixed].sort();
+let leaveData = [];
+let holidayData = []; // {name, date, scope: 'all'|Set<string>}
+let metrics = {};
+let trailingData = {};
+let rosterRows = [];
+
+document.getElementById('startDate').valueAsDate = new Date();
+
+// --- Leave dropdown ---
+const nameDropdown = document.getElementById('leaveName');
+allNames.forEach(n => {
+  let opt = document.createElement('option');
+  opt.value = n; opt.innerText = n;
+  nameDropdown.appendChild(opt);
+});
+
+// --- Scope checkboxes ---
+const scopeBox = document.getElementById('scopeCheckboxes');
+allNames.forEach(n => {
+  const safeId = 'sc_' + n.replace(/[\s.]/g,'_');
+  const label = document.createElement('label');
+  label.innerHTML = `<input type="checkbox" id="${safeId}" value="${n}" onchange="scopeIndividualChange()"> ${n}`;
+  scopeBox.appendChild(label);
+});
+
+function toggleScopeDropdown(e) {
+  e.stopPropagation();
+  document.getElementById('scopeDropdown').classList.toggle('open');
+}
+document.addEventListener('click', () => document.getElementById('scopeDropdown').classList.remove('open'));
+
+function scopeAllToggle(cb) {
+  const checked = cb.checked;
+  allNames.forEach(n => {
+    const safeId = 'sc_' + n.replace(/[\s.]/g,'_');
+    document.getElementById(safeId).checked = false;
+  });
+  updateScopeTrigger();
+}
+function scopeIndividualChange() {
+  document.getElementById('scopeAll').checked = false;
+  updateScopeTrigger();
+}
+function updateScopeTrigger() {
+  const allCb = document.getElementById('scopeAll');
+  if (allCb.checked) {
+    document.getElementById('scopeTriggerBtn').textContent = '🌟 All Staff';
+    return;
+  }
+  const selected = getSelectedScope();
+  if (selected === 'all' || selected.size === 0) {
+    document.getElementById('scopeTriggerBtn').textContent = '🌟 All Staff';
+  } else {
+    document.getElementById('scopeTriggerBtn').textContent = `👤 ${selected.size} selected`;
+  }
+}
+function getSelectedScope() {
+  if (document.getElementById('scopeAll').checked) return 'all';
+  const sel = new Set();
+  allNames.forEach(n => {
+    const safeId = 'sc_' + n.replace(/[\s.]/g,'_');
+    if (document.getElementById(safeId).checked) sel.add(n);
+  });
+  return sel.size === 0 ? 'all' : sel; // default to all if nothing ticked
+}
+function resetScopeUI() {
+  document.getElementById('scopeAll').checked = true;
+  allNames.forEach(n => {
+    document.getElementById('sc_' + n.replace(/[\s.]/g,'_')).checked = false;
+  });
+  updateScopeTrigger();
+}
+
+// --- Trailing ---
+const tbody = document.getElementById('trailingBody');
+allNames.forEach(n => {
+  trailingData[n] = { days: 0, shift: 'none' };
+  const safeId = n.replace(/[\s.]/g,'_');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td title="${n}">${n}</td>
+    <td>
+      <select id="shift_${safeId}" onchange="updateTrailing('${n}')">
+        <option value="none">— None —</option>
+        <option value="M">Morning</option>
+        <option value="A">Afternoon</option>
+        <option value="N">Night</option>
+      </select>
+    </td>
+    <td><input type="number" id="days_${safeId}" min="0" max="5" value="0" onchange="updateTrailing('${n}')"></td>
+    <td id="preview_${safeId}"><span class="pill-none shift-pill">Not set</span></td>`;
+  tbody.appendChild(tr);
+});
+
+function updateTrailing(name) {
+  const safeId = name.replace(/[\s.]/g,'_');
+  const days = Math.min(5, Math.max(0, parseInt(document.getElementById('days_'+safeId).value)||0));
+  const shift = document.getElementById('shift_'+safeId).value;
+  trailingData[name] = { days, shift };
+  const prev = document.getElementById('preview_'+safeId);
+  if(days===0||shift==='none') { prev.innerHTML = `<span class="pill-none shift-pill">Not set</span>`; }
+  else {
+    const labels = {M:'Morning',A:'Afternoon',N:'Night'};
+    const cls = {M:'pill-m',A:'pill-a',N:'pill-n'}[shift];
+    prev.innerHTML = `<span class="shift-pill ${cls}">${days}d on ${labels[shift]}</span>`;
+  }
+}
+
+// --- Leave ---
+function addLeave() {
+  const name = document.getElementById('leaveName').value;
+  const start = document.getElementById('leaveStart').value;
+  const end = document.getElementById('leaveEnd').value;
+  if(!start||!end) return alert("Please select start and end dates");
+  if(new Date(start)>new Date(end)) return alert("Start must be before end");
+  leaveData.push({name, start: new Date(start), end: new Date(end)});
+  updateLeaveList();
+}
+function updateLeaveList() {
+  document.getElementById('leaveRegistry').innerHTML = leaveData.map((l,i)=>`
+    <div class="leave-item">
+      <span><strong>${l.name}</strong>: ${l.start.toLocaleDateString()} – ${l.end.toLocaleDateString()}</span>
+      <button onclick="leaveData.splice(${i},1);updateLeaveList()" style="color:#d93025;border:none;background:none;cursor:pointer">✕</button>
+    </div>`).join('');
+}
+function isOnLeave(name, date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  return leaveData.some(l=>name===l.name && d>=l.start && d<=l.end);
+}
+
+// --- Public Holidays ---
+function addHoliday() {
+  const name = document.getElementById('holidayName').value.trim();
+  const dateVal = document.getElementById('holidayDate').value;
+  if(!name) return alert("Please enter a holiday name.");
+  if(!dateVal) return alert("Please select a date for the holiday.");
+  const scope = getSelectedScope();
+  const date = new Date(dateVal); date.setHours(0,0,0,0);
+  holidayData.push({ name, date, scope });
+  document.getElementById('holidayName').value = '';
+  document.getElementById('holidayDate').value = '';
+  resetScopeUI();
+  updateHolidayList();
+}
+
+function updateHolidayList() {
+  document.getElementById('holidayRegistry').innerHTML = holidayData.map((h,i)=>{
+    const scopeLabel = h.scope === 'all'
+      ? `<span class="holiday-scope-badge scope-all">All Staff</span>`
+      : `<span class="holiday-scope-badge scope-select">${h.scope.size} staff</span>`;
+    const names = h.scope === 'all' ? '' : `<span style="font-size:9px;color:#555">${[...h.scope].join(', ')}</span>`;
+    return `<div class="holiday-item">
+      <div class="holiday-item-left">
+        <strong>${h.name} ${scopeLabel}</strong>
+        <span>${h.date.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}${names?` — ${names}`:''}</span>
+      </div>
+      <button onclick="holidayData.splice(${i},1);updateHolidayList()" style="color:#7b1fa2;border:none;background:none;cursor:pointer;font-size:14px">✕</button>
+    </div>`;
+  }).join('');
+}
+
+/**
+ * Returns holiday info for a name+date:
+ * null           → not a holiday for this person
+ * { name }       → is a holiday for this person
+ */
+function getHolidayForPerson(name, date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  for (const h of holidayData) {
+    const hd = new Date(h.date); hd.setHours(0,0,0,0);
+    if (hd.getTime() !== d.getTime()) continue;
+    if (h.scope === 'all') return { name: h.name };
+    if (h.scope.has(name)) return { name: h.name };
+  }
+  return null;
+}
+
+/**
+ * Returns true if date is a full-staff public holiday
+ */
+function isFullStaffHoliday(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+  return holidayData.some(h => {
+    const hd = new Date(h.date); hd.setHours(0,0,0,0);
+    return hd.getTime() === d.getTime() && h.scope === 'all';
+  });
+}
+
+function dateKey(d) { return d.toISOString().slice(0,10); }
+
+// --- Roster Generation ---
+function generateRoster() {
+  const startDate = new Date(document.getElementById('startDate').value);
+  startDate.setHours(0,0,0,0);
+  const totalDays = parseInt(document.getElementById('duration').value);
+
+  metrics = {};
+  rosterRows = [];
+  allNames.forEach(n => metrics[n]={M:0,A:0,N:0,G:0,W:0,Total:0,ForcedOff:0,PHDays:0});
+
+  const streak = {};
+  const lastShift = {};
+  const forcedOffDays = {};
+  allNames.forEach(n => {
+    streak[n] = trailingData[n]?.days || 0;
+    lastShift[n] = (trailingData[n]?.shift && trailingData[n].shift!=='none') ? trailingData[n].shift : null;
+    forcedOffDays[n] = new Set();
+  });
+
+  // PASS 1: determine who works each day (ignoring holidays for streak purposes — holidays are neutral rest)
+  const prelim = [];
+  for(let i=0;i<totalDays;i++) {
+    let cur = new Date(startDate); cur.setDate(startDate.getDate()+i);
+    const isWE = cur.getDay()===0||cur.getDay()===6;
+    const fullPH = isFullStaffHoliday(cur);
+    const workers = new Set();
+
+    if(!fullPH) { // nobody works on full-staff holidays
+      if(!isWE) team.fixed.forEach(n=>{ if(!isOnLeave(n,cur) && !getHolidayForPerson(n,cur)) workers.add(n); });
+      ['tls','l3s','l2s'].forEach(grp=>team[grp].forEach((name,idx)=>{
+        if((i+idx)%7<5 && !isOnLeave(name,cur) && !getHolidayForPerson(name,cur)) workers.add(name);
+      }));
+    }
+    prelim.push({date:cur, isWE, fullPH, workers});
+  }
+
+  // PASS 2: streak tracking — holidays do NOT increment or reset streak; they are transparent
+  prelim.forEach(({date, isWE, fullPH, workers})=>{
+    if(fullPH) return; // skip holiday entirely for streak purposes
+
+    workers.forEach(name=>{
+      if(streak[name]>=5){ forcedOffDays[name].add(dateKey(date)); streak[name]=0; }
+      else streak[name]++;
+    });
+    // People not working reset their streak (leaves, weekends, individual holidays)
+    allNames.forEach(name=>{
+      if(!workers.has(name) && !getHolidayForPerson(name,date)) streak[name]=0;
+    });
+  });
+
+  // PASS 3: render HTML
+  let html = `<table id="rosterTable"><thead><tr>
+    <th style="width:100px">Date</th><th>Morning</th><th>Afternoon</th><th>Night</th><th>General / Leave / Off / Holiday</th>
+  </tr></thead><tbody>`;
+
+  for(let i=0;i<totalDays;i++) {
+    let cur = new Date(startDate); cur.setDate(startDate.getDate()+i);
+    const { isWE, fullPH, workers } = prelim[i];
+    const dk = dateKey(cur);
+    let d={morning:[],afternoon:[],night:[],general:[],leaves:[],forcedOff:[],phPersons:[]};
+
+    // Collect per-person public holidays (not full-staff)
+    allNames.forEach(name => {
+      const ph = getHolidayForPerson(name, cur);
+      if(ph && !fullPH) { d.phPersons.push({name, holiday: ph.name}); metrics[name].PHDays++; }
+    });
+
+    if(!fullPH) {
+      if(!isWE) team.fixed.forEach(n=>{
+        if(isOnLeave(n,cur)) d.leaves.push(n);
+        else if(getHolidayForPerson(n,cur)) { /* already in phPersons */ }
+        else if(forcedOffDays[n].has(dk)){ d.forcedOff.push(n); metrics[n].ForcedOff++; }
+        else { d.general.push({name:n,role:'GEN'}); metrics[n].G++; metrics[n].Total++; }
+      });
+
+      ['tls','l3s','l2s'].forEach((grp,gi)=>{
+        const role=['TL','L3','L2'][gi];
+        team[grp].forEach((name,idx)=>{
+          if((i+idx)%7<5){
+            if(isOnLeave(name,cur)) d.leaves.push(name);
+            else if(getHolidayForPerson(name,cur)) { /* already in phPersons */ }
+            else if(forcedOffDays[name].has(dk)){ d.forcedOff.push(name); metrics[name].ForcedOff++; }
+            else {
+              let shift;
+              if(i===0&&lastShift[name]){ const sm={'M':0,'A':1,'N':2}; shift=(sm[lastShift[name]]+1)%3; }
+              else shift=(Math.floor((i+idx)/7)+idx)%3;
+              const agent={name,role};
+              if(shift===0){d.morning.push(agent);metrics[name].M++;}
+              else if(shift===1){d.afternoon.push(agent);metrics[name].A++;}
+              else{d.night.push(agent);metrics[name].N++;}
+              metrics[name].Total++;
+              if(isWE) metrics[name].W++;
+            }
+          }
+        });
+      });
+    } else {
+      // Full-staff holiday: count PH for everyone scheduled that day
+      allNames.forEach(name => { metrics[name].PHDays++; });
+    }
+
+    // Build holiday label for full-staff
+    const holidayNames = holidayData
+      .filter(h => { const hd=new Date(h.date); hd.setHours(0,0,0,0); return hd.getTime()===cur.getTime(); })
+      .map(h=>h.name);
+    const holidayLabel = holidayNames.length ? holidayNames.join(' / ') : '';
+
+    // Row class
+    let rowClass = '';
+    if(fullPH) rowClass = 'public-holiday-row';
+    else if(isWE) rowClass = 'weekend';
+
+    // General column extra content
+    let genExtra = '';
+    if(fullPH) genExtra = `<span class="ph-tag" style="font-size:10px;padding:3px 5px;">&#127881; PUBLIC HOLIDAY: ${holidayLabel} — All Staff</span>`;
+
+    // Plain text for exports
+    const phNames = d.phPersons.map(p=>`PH(${p.holiday}): ${p.name}`).join(', ');
+    rosterRows.push({
+      date: cur.toDateString().slice(0,15),
+      isWE,
+      fullPH,
+      holidayLabel,
+      morning: fullPH ? '' : d.morning.map(a=>a.name).join(', '),
+      afternoon: fullPH ? '' : d.afternoon.map(a=>a.name).join(', '),
+      night: fullPH ? '' : d.night.map(a=>a.name).join(', '),
+      general: fullPH
+        ? `PUBLIC HOLIDAY: ${holidayLabel}`
+        : [
+            ...d.general.map(a=>a.name),
+            ...d.leaves.map(l=>'LEAVE: '+l),
+            ...d.forcedOff.map(l=>'OFF: '+l),
+            ...d.phPersons.map(p=>`PH(${p.holiday}): ${p.name}`)
+          ].join(', ')
+    });
+
+    // Individual PH tags in general column
+    const phTags = d.phPersons.map(p=>`<span class="ph-tag">&#127881; PH: ${p.name} (${p.holiday})</span>`).join('');
+
+    html += `<tr class="${rowClass}">
+      <td style="font-weight:500">${cur.toDateString().slice(0,15)}</td>
+      <td class="${fullPH?'ph-cell':'shift-m'}">${fullPH?'':renderCell(d.morning)}</td>
+      <td class="${fullPH?'ph-cell':'shift-a'}">${fullPH?'':renderCell(d.afternoon)}</td>
+      <td class="${fullPH?'ph-cell':'shift-n'}">${fullPH?'':renderCell(d.night)}</td>
+      <td class="${d.forcedOff.length&&!fullPH?'warn-cell':''}${fullPH?'ph-cell':''}">
+        ${genExtra}
+        ${fullPH?'':renderCell(d.general)}
+        ${fullPH?'':d.leaves.map(l=>`<span class="leave-tag">LEAVE: ${l}</span>`).join('')}
+        ${fullPH?'':d.forcedOff.map(l=>`<span class="off-tag">&#x21BB; OFF: ${l}</span>`).join('')}
+        ${fullPH?'':phTags}
+      </td></tr>`;
+  }
+
+  document.getElementById('rosterOutput').innerHTML = html + "</tbody></table>";
+  document.getElementById('exportBar').classList.add('visible');
+  document.getElementById('rosterLegend').style.display = 'flex';
+  renderStats();
+}
+
+function renderCell(agents) {
+  return agents.map(a=>`<span class="badge bg-${a.role.toLowerCase()}">${a.name}</span>`).join('');
+}
+
+function renderStats() {
+  let html=`<table><thead><tr><th>Name</th><th>Total</th><th>M</th><th>A</th><th>N</th><th>Wknd</th><th>Force-Off</th><th>PH Days</th></tr></thead><tbody>`;
+  Object.keys(metrics).sort().forEach(n=>{
+    const m=metrics[n];
+    const fo=m.ForcedOff>0?`<span class="streak-warn">${m.ForcedOff}</span>`:'0';
+    const ph=m.PHDays>0?`<span style="background:#ede7f6;color:#4a148c;display:inline-block;padding:1px 5px;border-radius:10px;font-size:9px;font-weight:600">${m.PHDays}</span>`:'0';
+    html+=`<tr><td style="text-align:left;font-size:10px">${n}</td><td>${m.Total}</td><td>${m.M}</td><td>${m.A}</td><td>${m.N}</td><td>${m.W}</td><td>${fo}</td><td>${ph}</td></tr>`;
+  });
+  document.getElementById('fairnessOutput').innerHTML=html+"</tbody></table>";
+}
+
+function fileName(ext) { return `Oracle_Roster_${new Date().toISOString().slice(0,10)}.${ext}`; }
+function triggerDownload(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.style.display='none';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+// 1. CSV
+function exportCSV() {
+  if(!rosterRows.length) return alert("Generate roster first.");
+  const header = ['Date','Morning','Afternoon','Night','General / Leave / Off / Holiday'];
+  const rows = [header, ...rosterRows.map(r=>[r.date,r.morning,r.afternoon,r.night,r.general])];
+  const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  triggerDownload(new Blob([csv],{type:'text/csv'}), fileName('csv'));
+}
+
+// 2. Excel (.xlsx) via SheetJS
+function exportExcel() {
+  if(!rosterRows.length) return alert("Generate roster first.");
+  if(typeof XLSX==='undefined') return alert("Excel library not loaded yet, please wait a moment.");
+  const header = ['Date','Morning','Afternoon','Night','General / Leave / Off / Holiday'];
+  const data = [header, ...rosterRows.map(r=>[r.date,r.morning,r.afternoon,r.night,r.general])];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:18},{wch:40},{wch:40},{wch:40},{wch:55}];
+  const headerStyle = {font:{bold:true,color:{rgb:"FFFFFF"}},fill:{fgColor:{rgb:"202124"}},alignment:{horizontal:"center"}};
+  ['A1','B1','C1','D1','E1'].forEach(cell=>{ if(ws[cell]) ws[cell].s=headerStyle; });
+  rosterRows.forEach((row,i)=>{
+    const r=i+2;
+    const mStyle={fill:{fgColor:{rgb:"E8F0FE"}}};
+    const aStyle={fill:{fgColor:{rgb:"FEF7E0"}}};
+    const nStyle={fill:{fgColor:{rgb:"FCE8F3"}}};
+    const phStyle={fill:{fgColor:{rgb:"F3E5F5"}}};
+    const wkStyle={fill:{fgColor:{rgb:"F1F3F4"}}};
+    if(row.fullPH) {
+      ['A','B','C','D','E'].forEach(col=>{ if(ws[`${col}${r}`]) ws[`${col}${r}`].s = phStyle; });
+    } else {
+      if(ws[`A${r}`]) ws[`A${r}`].s = row.isWE ? wkStyle : {};
+      if(ws[`B${r}`]) ws[`B${r}`].s = mStyle;
+      if(ws[`C${r}`]) ws[`C${r}`].s = aStyle;
+      if(ws[`D${r}`]) ws[`D${r}`].s = nStyle;
+    }
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Roster');
+
+  // Fairness sheet
+  const fHeader=['Name','Total','Morning','Afternoon','Night','Weekend','Force-Off','PH Days'];
+  const fData=[fHeader,...Object.keys(metrics).sort().map(n=>{
+    const m=metrics[n]; return [n,m.Total,m.M,m.A,m.N,m.W,m.ForcedOff,m.PHDays];
+  })];
+  const ws2=XLSX.utils.aoa_to_sheet(fData);
+  ws2['!cols']=[{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:10},{wch:10},{wch:9}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Fairness Matrix');
+  XLSX.writeFile(wb, fileName('xlsx'));
+}
+
+// 3. PDF via print dialog
+function exportPDF() {
+  if(!rosterRows.length) return alert("Generate roster first.");
+  const printWin = window.open('','_blank','width=1200,height=800');
+  printWin.document.write(buildPrintHTML());
+  printWin.document.close(); printWin.focus();
+  setTimeout(()=>{ printWin.print(); }, 600);
+}
+
+// 4. HTML file
+function exportHTML() {
+  if(!rosterRows.length) return alert("Generate roster first.");
+  triggerDownload(new Blob([buildPrintHTML()],{type:'text/html'}), fileName('html'));
+}
+
+function buildPrintHTML() {
+  const rows = rosterRows.map(r=>{
+    let bg = '';
+    if(r.fullPH) bg = 'background:#f3e5f5;';
+    else if(r.isWE) bg = 'background:#f1f3f4;';
+    return `<tr style="${bg}">
+      <td style="font-weight:600;white-space:nowrap${r.fullPH?';border-left:3px solid #7b1fa2':r.isWE?';border-left:3px solid #1a73e8':''}">${r.date}${r.fullPH?'<br><small style="color:#7b1fa2;font-size:8px">★ '+r.holidayLabel+'</small>':''}</td>
+      <td style="background:${r.fullPH?'#f3e5f5':'#e8f0fe'}">${r.morning||'—'}</td>
+      <td style="background:${r.fullPH?'#f3e5f5':'#fef7e0'}">${r.afternoon||'—'}</td>
+      <td style="background:${r.fullPH?'#f3e5f5':'#fce8f3'}">${r.night||'—'}</td>
+      <td>${r.general||'—'}</td>
+    </tr>`;
+  }).join('');
+  const fRows = Object.keys(metrics).sort().map(n=>{
+    const m=metrics[n];
+    return `<tr><td>${n}</td><td>${m.Total}</td><td>${m.M}</td><td>${m.A}</td><td>${m.N}</td><td>${m.W}</td><td>${m.ForcedOff}</td><td>${m.PHDays}</td></tr>`;
+  }).join('');
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Oracle CSS Roster</title>
+  <style>
+    body{font-family:Arial,sans-serif;font-size:10px;padding:20px;color:#1a1a1b}
+    h2{font-size:14px;margin:0 0 4px}p{font-size:10px;color:#666;margin:0 0 12px}
+    table{width:100%;border-collapse:collapse;margin-bottom:24px}
+    th{background:#202124;color:white;padding:6px;font-size:9px;text-transform:uppercase;text-align:left}
+    td{border:1px solid #dfe1e5;padding:5px;vertical-align:top}
+    @media print{@page{size:A3 landscape;margin:10mm}}
+  </style></head><body>
+  <h2>Oracle CSS Shift Roster</h2>
+  <p>Generated: ${new Date().toLocaleString()}</p>
+  <table>
+    <thead><tr><th>Date</th><th>Morning</th><th>Afternoon</th><th>Night</th><th>General / Leave / Off / Holiday</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <h2>Staff Fairness Matrix</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Total</th><th>Morning</th><th>Afternoon</th><th>Night</th><th>Weekend</th><th>Force-Off</th><th>PH Days</th></tr></thead>
+    <tbody>${fRows}</tbody>
+  </table>
+  </body></html>`;
+}
+</script>
+</body>
+</html>
